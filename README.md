@@ -57,6 +57,7 @@ Le pipeline se divise en plusieurs étapes :
 
 Lors du déploiement, les commandes suivantes sont utilisées :
 
+
 ```bash
 kubectl apply -f backend/configmap-a.yaml --validate=false
 kubectl apply -f backend/deployment-a.yaml
