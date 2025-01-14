@@ -1,0 +1,156 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chat
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: chat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: node:20
+        ports:
+        - containerPort: 3000
+        volumeMounts:
+        - mountPath: /app
+          name: frontend-volume
+        env:
+        - name: CHOKIDAR_USEPOLLING
+          value: "true"
+        command: ["npm", "start"]
+      volumes:
+      - name: frontend-volume
+        emptyDir: {}  # Utilisation de emptyDir, vous pouvez remplacer par un volume persistant si nécessaire
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: chat
+spec:
+  selector:
+    app: frontend
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: chat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: jaleleddine1/node-chat-backend:latest  # Assurez-vous que cette image contient votre code backend
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - mountPath: /app  # Vérifiez que /app est bien le répertoire contenant le code
+          name: backend-volume
+        env:
+        - name: JWT_SECRET
+          value: "your_jwt_secret"
+        - name: PORT
+          value: "5000"
+        command: ["npm", "run", "dev"]
+      volumes:
+      - name: backend-volume
+        hostPath:  # Si vous travaillez en local, vous pouvez utiliser un volume hostPath
+          path: C:\Users\P50\Desktop\MERN-Chat-App-master\backend  # Remplacez par le chemin de votre code local
+          type: Directory
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: chat
+spec:
+  selector:
+    app: backend
+  ports:
+  - protocol: TCP
+    port: 5000
+    targetPort: 5000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  namespace: chat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+      - name: mongo
+        image: mongo:latest
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - mountPath: /data/db
+          name: mongo-data
+      volumes:
+      - name: mongo-data
+        persistentVolumeClaim:
+          claimName: mongo-data
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service
+  namespace: chat
+spec:
+  selector:
+    app: mongo
+  ports:
+  - protocol: TCP
+    port: 27017
+    targetPort: 27017
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-data
+  namespace: chat
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

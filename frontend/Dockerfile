@@ -5,7 +5,7 @@ FROM node:20 AS build
 WORKDIR /app
 
 # Copier le package.json et package-lock.json pour installer les dépendances
-COPY package*.json ./
+COPY package.json package-lock.json ./
 
 # Installer les dépendances
 RUN npm install
